@@ -1,0 +1,45 @@
+---
+title: "Homework 4"
+author: "Hayden Morgan"
+format: pdf
+---
+
+## Task 1: Conceptual Questions
+
+### Question 1
+The "l" in the lapply() function refers to a list. The lapply() function applies a function to each element of a list, and returns a list of the results that is the same length as the original list. The purrr function equivalent is map().
+
+### Question 2
+```{r}
+```
+
+### Question 3
+There are two advantages of using purrr functions instead of BaseR apply family functions: 1) purrr functions help with consistency and clarity, and 2) there are some helper functions in the purrr package that can be especially useful. 
+
+### Question 4
+A side effect function is a function that does not engage in data transformation, but rather, produces some output without altering the data. For example, print() and plot() are both side effect functions: both can produce a product from given data, but neither alters the original input data.
+
+### Question 5
+When a function is run, it creates a temporary environment in which to work instead of putting objects into a global environment. Because of this, a variable named "sd" inside of a function does not change the identity of any other variable also named "sd" outside of the function. The environment that the function "sd" variable resides in is not the same environment in which an "sd" variable outside of the function resides.
+
+## Task 2: Writing R Functions 
+
+### Question 1
+
+### Question 2
+
+### Question 3
+
+### Question 4
+
+### Question 5
+
+### Question 6
+
+## Task 3: Querying an API and a Tidy-Style Function 
+
+### Question 1
+
+### Question 2
+
+### Question 3
