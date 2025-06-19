@@ -2,7 +2,16 @@
 title: "Homework 4"
 author: "Hayden Morgan"
 format: pdf
+editor_options: 
+  chunk_output_type: console
 ---
+
+```{r}
+#|message: false
+#|warning: false 
+library(tidyverse)
+library(palmerpenguins)
+```
 
 ## Task 1: Conceptual Questions
 
@@ -10,7 +19,8 @@ format: pdf
 The "l" in the lapply() function refers to a list. The lapply() function applies a function to each element of a list, and returns a list of the results that is the same length as the original list. The purrr function equivalent is map().
 
 ### Question 2
-```{r}
+```{r, eval=FALSE}
+lapply(my_list, cor, x = numeric_matrix, method = "kendall")
 ```
 
 ### Question 3
@@ -25,16 +35,145 @@ When a function is run, it creates a temporary environment in which to work inst
 ## Task 2: Writing R Functions 
 
 ### Question 1
+```{r}
+
+getRMSE <- function(response_vector, prediction_vector, ...){
+  result <- sqrt(mean(response_vector-prediction_vector, ...)^2)
+  return(result)
+}
+
+```
 
 ### Question 2
+```{r}
+
+#Run code to create response and prediction values
+set.seed(10)
+n <- 100
+x <- runif(n)
+resp <- 3 + 10*x + rnorm(n)
+pred <- predict(lm(resp ~ x), data.frame(x))
+
+#Test RMSE function using the data from above
+getRMSE(resp, pred)
+
+#Repeat after replacing two of the response values with missing values 
+#Test RMSE fxn w/ and w/o specifying the behavior to deal w/ missing vals 
+resp[1] <- NA_real_
+resp[2] <- NA_real_
+
+getRMSE(resp, pred, na.rm = TRUE)
+
+getRMSE(resp, pred)
+
+```
 
 ### Question 3
+```{r}
+
+getMAE <- function(response_vector, prediction_vector, ...){
+  result <- mean(abs(response_vector-prediction_vector), ...)
+  return(result)
+}
+
+```
 
 ### Question 4
+```{r}
+
+#Run code to create response and prediction values
+set.seed(10)
+n <- 100
+x <- runif(n)
+resp <- 3 + 10*x + rnorm(n)
+pred <- predict(lm(resp ~ x), data.frame(x))
+
+#Test MAE function using the data from above
+getMAE(resp, pred)
+
+#Repeat after replacing two of the response values with missing values 
+#Test RMSE fxn w/ and w/o specifying the behavior to deal w/ missing vals 
+resp[1] <- NA_real_
+resp[2] <- NA_real_
+
+getMAE(resp, pred, na.rm = TRUE)
+
+getMAE(resp, pred)
+
+```
 
 ### Question 5
+```{r}
+
+getRMSE_getMAE_wrapper <- function(vector1, vector2, return = "Both", ...){
+  if(is.vector(vector1) == TRUE & is.atomic(vector1) == TRUE &
+     is.numeric(vector1) == TRUE){
+  } else {
+    return("Something's wrong...")
+  }
+  
+  if(is.vector(vector2) == TRUE & is.atomic(vector2) == TRUE &
+     is.numeric(vector2) == TRUE){
+  } else {
+    return("Something's wrong...")
+  }
+  
+  if(return == "Both"){
+    RMSE <- getRMSE(vector1, vector2, ...)
+    
+    MAE <- getMAE(vector1, vector2, ...)
+    
+    return(list(RMSE, MAE))
+  } else if(return == "RMSE"){
+    return(getRMSE(vector1, vector2, ...))
+  } else if(return == "MAE"){
+    return(getMAE(vector1, vector2, ...))
+  } else {
+    return("Error")
+  }
+}
+
+```
 
 ### Question 6
+```{r}
+
+#Run code to create response and prediction values
+set.seed(10)
+n <- 100
+x <- runif(n)
+resp <- 3 + 10*x + rnorm(n)
+pred <- predict(lm(resp ~ x), data.frame(x))
+
+#Test new function using the data from above
+#Call once specifying both metrics
+getRMSE_getMAE_wrapper(resp, pred, "Both")
+
+#Call it once asking for each metric individually
+getRMSE_getMAE_wrapper(resp, pred, "RMSE")
+
+getRMSE_getMAE_wrapper(resp, pred, "MAE")
+
+#Repeat after replacing two of the response values with missing values 
+resp[1] <- NA_real_
+resp[2] <- NA_real_
+
+getRMSE_getMAE_wrapper(resp, pred, "Both", na.rm = TRUE)
+
+getRMSE_getMAE_wrapper(resp, pred, "RMSE", na.rm = TRUE)
+
+getRMSE_getMAE_wrapper(resp, pred, "MAE", na.rm = TRUE)
+
+getRMSE_getMAE_wrapper(resp, pred, "Both")
+
+getRMSE_getMAE_wrapper(resp, pred, "RMSE")
+
+getRMSE_getMAE_wrapper(resp, pred, "MAE")
+
+#Test fxn by passing incorrect data
+getRMSE_getMAE_wrapper(iris, penguins)
+
+```
 
 ## Task 3: Querying an API and a Tidy-Style Function 
 
