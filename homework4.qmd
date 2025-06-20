@@ -6,9 +6,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r}
-#|message: false
-#|warning: false 
+```{r, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(palmerpenguins)
 library(httr)
@@ -18,29 +16,50 @@ library(jsonlite)
 ## Task 1: Conceptual Questions
 
 ### Question 1
+**What is the purpose of the lapply() function? What is the equivalent purrr function?**
+
 The "l" in the lapply() function refers to a list. The lapply() function applies a function to each element of a list, and returns a list of the results that is the same length as the original list. The purrr function equivalent is map().
 
 ### Question 2
+**Suppose we have a list called my_list. Each element of the list is a numeric data frame (all columns are numeric). We want use lapply() to run the code cor(numeric_matrix, method = "kendall") on each element of the list. Write code to do this below! (I’m really trying to ask you how you specify method = "kendall" when calling lapply())**
 ```{r, eval=FALSE}
 lapply(my_list, cor, x = numeric_matrix, method = "kendall")
 ```
 
 ### Question 3
-There are two advantages of using purrr functions instead of BaseR apply family functions: 1) purrr functions help with consistency and clarity, and 2) there are some helper functions in the purrr package that can be especially useful. 
+**What are two advantages of using purrr functions instead of the BaseR apply family?**
+
+There are two advantages of using purrr functions instead of BaseR apply family functions: 1) purrr functions help with consistency and clarity, and 2) there are some helper functions/shorthand techniques in the purrr package that can be especially useful. Regarding point 1), the [StackOverflow post mentioned in the lecture](https://stackoverflow.com/questions/45101045/why-use-purrrmap-instead-of-lapply)  points out that when you're trying to do something involving the apply/map, you're not just using one function in these families, you're using multiple. purrr provides a greater consistency between these multiple, related functions than the apply family in Base R. For example, the first argument in lappy() is data, but the first argument in mapply() is the function; but all map functions have data as the first argument always. Regarding point 2), there are lots of shorthand options available in map(), for example. The lecture gives the example that to grab the second element from each list, you can simply write map(my_list, 2) instead of these lines of code for lapply:
+
+lapply(my_list, function(x) x[[2]])
+
+lapply(my_list, `[[`, 2)
+
+The StackOverflow post also points to the ability to write shorthand for anonymous functions using x in parentheses and backslash, as well as other examples of this point. 
 
 ### Question 4
+**What is a side-effect function?**
+
 A side effect function is a function that does not engage in data transformation, but rather, produces some output without altering the data. For example, print() and plot() are both side effect functions: both can produce a product from given data, but neither alters the original input data.
 
 ### Question 5
+**Why can you name a variable sd in a function and not cause any issues with the sd function?**
+
 When a function is run, it creates a temporary environment in which to work instead of putting objects into a global environment. Because of this, a variable named "sd" inside of a function does not change the identity of any other variable also named "sd" outside of the function. The environment that the function "sd" variable resides in is not the same environment in which an "sd" variable outside of the function resides.
 
 ## Task 2: Writing R Functions 
 
 ### Question 1
+
+Write a basic function (call it getRMSE()) that takes in a vector of responses and a
+vector of predictions and outputs the RMSE.
 ```{r}
 
+#If a value is missing for the vector of responses (i.e. an NA is present), 
+#allow for additional arguments to the mean() function (elipses) that removes 
+#the NA values in the computation.
 getRMSE <- function(response_vector, prediction_vector, ...){
-  result <- sqrt(mean(response_vector-prediction_vector, ...)^2)
+  result <- sqrt(mean((response_vector-prediction_vector)^2, ...))
   return(result)
 }
 
@@ -71,6 +90,9 @@ getRMSE(resp, pred)
 ```
 
 ### Question 3
+
+Write a function called getMAE() that follows the specifications of the getRMSE()
+function.
 ```{r}
 
 getMAE <- function(response_vector, prediction_vector, ...){
@@ -105,9 +127,18 @@ getMAE(resp, pred)
 ```
 
 ### Question 5
+
+Let’s create a wrapper function that can be used to get either or both metrics returned with a single function call. Do not rewrite your above two functions, call them inside the wrapper function (we would call the getRMSE() and getMAE() functions helper functions). When returning your values, give them appropriate names.
 ```{r}
 
-getRMSE_getMAE_wrapper <- function(vector1, vector2, return = "Both", ...){
+#The function should check that two numeric (atomic) vectors have been passed 
+#(consider is.vector(), is.atomic(), and is.numeric()). 
+#If not, a message should print and the function should exit.
+
+#The function should return both metrics by default and include names. 
+#The behavior should be able to be changed using a character 
+#string of metrics to find.
+getRMSE_getMAE_wrapper <- function(vector1, vector2, metric = "Both", ...){
   if(is.vector(vector1) == TRUE & is.atomic(vector1) == TRUE &
      is.numeric(vector1) == TRUE){
   } else {
@@ -120,16 +151,16 @@ getRMSE_getMAE_wrapper <- function(vector1, vector2, return = "Both", ...){
     return("Something's wrong...")
   }
   
-  if(return == "Both"){
+  if(metric == "Both"){
     RMSE <- getRMSE(vector1, vector2, ...)
     
     MAE <- getMAE(vector1, vector2, ...)
     
-    return(list(RMSE, MAE))
-  } else if(return == "RMSE"){
-    return(getRMSE(vector1, vector2, ...))
-  } else if(return == "MAE"){
-    return(getMAE(vector1, vector2, ...))
+    return(data.frame(RMSE, MAE))
+  } else if(metric == "RMSE"){
+    return(data.frame(RMSE = getRMSE(vector1, vector2, ...)))
+  } else if(metric == "MAE"){
+    return(data.frame(MAE = getMAE(vector1, vector2, ...)))
   } else {
     return("Error")
   }
@@ -179,17 +210,27 @@ getRMSE_getMAE_wrapper(iris, penguins)
 
 ## Task 3: Querying an API and a Tidy-Style Function 
 
+For this section, you’ll connect to the news API here: newsapi.org. You’ll need to go to register for a key at that web site!
+
 ### Question 1
+
+Use GET() from the httr package to return information about a topic that you are interested in that has been in the news lately (store the result as an R object). Note: We can only look 30 days into the past with a free account.
 ```{r}
 
-GET_result <- GET("https://newsapi.org/v2/everything?q=Vaccine&from=2025-06-01&apiKey=b4902a7135914e3da8e0cf971b2e8fd3")
+#I had to paste stuff together because the uninterrupted URL kept running off the page!
+GET_result <- GET(paste0("https://newsapi.org/v2/everything?q=Vaccine&",
+"from=2025-06-01&apiKey=b4902a7135914e3da8e0cf971b2e8fd3"))
 
 ```
 
 ### Question 2
+
+Parse what is returned and find your way to the data frame that has the actual article information in it (check content). Note the first column should be a list column!
 ```{r}
 #Check content
-str(GET_result)
+#Very long so not showing here but used this code:
+#str(GET_result)
+#The above showed: $ content: raw [1:83056] 7b 22 73 74 ...
 
 #Parse and find way to df w/ actual article info 
 parsed <- fromJSON(rawToChar(GET_result$content))
@@ -202,17 +243,18 @@ is.list(vaccine_info$source)
 ```
 
 ### Question 3
+
+Now write a quick function that allows the user to easily query this API. The inputs to the function should be the title/subject to search for (string), a time period to search from (string - you’ll search from that time until the present), and an API key.
 ```{r}
 query_API <- function(title, YYYY_MM_DD, API_key){
-  GET_result <- GET(paste0("https://newsapi.org/v2/everything?q=", title, "&from=", YYYY_MM_DD, "&apiKey=", API_key))
+  GET_result <- GET(paste0("https://newsapi.org/v2/everything?q=", title, "&from=",
+                           YYYY_MM_DD, "&apiKey=", API_key))
   
   parsed <- fromJSON(rawToChar(GET_result$content))
   
   info <- as_tibble(parsed$articles)
   
   return(info)
-  
- return(GET_result)
   
 }
 
