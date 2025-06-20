@@ -11,6 +11,8 @@ editor_options:
 #|warning: false 
 library(tidyverse)
 library(palmerpenguins)
+library(httr)
+library(jsonlite)
 ```
 
 ## Task 1: Conceptual Questions
@@ -178,7 +180,43 @@ getRMSE_getMAE_wrapper(iris, penguins)
 ## Task 3: Querying an API and a Tidy-Style Function 
 
 ### Question 1
+```{r}
+
+GET_result <- GET("https://newsapi.org/v2/everything?q=Vaccine&from=2025-06-01&apiKey=b4902a7135914e3da8e0cf971b2e8fd3")
+
+```
 
 ### Question 2
+```{r}
+#Check content
+str(GET_result)
+
+#Parse and find way to df w/ actual article info 
+parsed <- fromJSON(rawToChar(GET_result$content))
+vaccine_info <- as_tibble(parsed$articles)
+vaccine_info
+
+#First col should be a list col
+is.list(vaccine_info$source)
+
+```
 
 ### Question 3
+```{r}
+query_API <- function(title, YYYY_MM_DD, API_key){
+  GET_result <- GET(paste0("https://newsapi.org/v2/everything?q=", title, "&from=", YYYY_MM_DD, "&apiKey=", API_key))
+  
+  parsed <- fromJSON(rawToChar(GET_result$content))
+  
+  info <- as_tibble(parsed$articles)
+  
+  return(info)
+  
+ return(GET_result)
+  
+}
+
+#Test your function with gamestop starting on May 19th, 2025
+query_API("gamestop", "2025-06-01", "b4902a7135914e3da8e0cf971b2e8fd3")
+
+```
