@@ -8,7 +8,6 @@ editor_options:
 
 ```{r, warning=FALSE, message=FALSE}
 library(tidyverse)
-library(palmerpenguins)
 library(httr)
 library(jsonlite)
 ```
@@ -23,19 +22,23 @@ The "l" in the lapply() function refers to a list. The lapply() function applies
 ### Question 2
 **Suppose we have a list called my_list. Each element of the list is a numeric data frame (all columns are numeric). We want use lapply() to run the code cor(numeric_matrix, method = "kendall") on each element of the list. Write code to do this below! (I’m really trying to ask you how you specify method = "kendall" when calling lapply())**
 ```{r, eval=FALSE}
-lapply(my_list, cor, x = numeric_matrix, method = "kendall")
+lapply(my_list, cor, method = "kendall")
 ```
 
 ### Question 3
 **What are two advantages of using purrr functions instead of the BaseR apply family?**
 
-There are two advantages of using purrr functions instead of BaseR apply family functions: 1) purrr functions help with consistency and clarity, and 2) there are some helper functions/shorthand techniques in the purrr package that can be especially useful. Regarding point 1), the [StackOverflow post mentioned in the lecture](https://stackoverflow.com/questions/45101045/why-use-purrrmap-instead-of-lapply)  points out that when you're trying to do something involving the apply/map, you're not just using one function in these families, you're using multiple. purrr provides a greater consistency between these multiple, related functions than the apply family in Base R. For example, the first argument in lappy() is data, but the first argument in mapply() is the function; but all map functions have data as the first argument always. Regarding point 2), there are lots of shorthand options available in map(), for example. The lecture gives the example that to grab the second element from each list, you can simply write map(my_list, 2) instead of these lines of code for lapply:
+There are two advantages of using purrr functions instead of BaseR apply family functions: 1) purrr functions help with consistency and clarity, and 2) purrr functions allow you to control what format the results that output will be in. 
+
+Regarding point 1), the [StackOverflow post mentioned in the lecture](https://stackoverflow.com/questions/45101045/why-use-purrrmap-instead-of-lapply)  points out that when you're trying to do something involving the apply/map, you're not just using one function in these families, you're using multiple. purrr provides a greater consistency between these multiple, related functions than the apply family in Base R. For example, the first argument in lappy() is data, but the first argument in mapply() is the function; but all map functions have data as the first argument always. Additionally, there are lots of shorthand options available in map(), for example, to help with clarity. The lecture gives the example that to grab the second element from each list, you can simply write map(my_list, 2) instead of these lines of code for lapply:
 
 lapply(my_list, function(x) x[[2]])
 
 lapply(my_list, `[[`, 2)
 
-The StackOverflow post also points to the ability to write shorthand for anonymous functions using x in parentheses and backslash, as well as other examples of this point. 
+The StackOverflow post also points to the ability to write shorthand for anonymous functions using x in parentheses and backslash, as well as other examples of this point.
+
+Regarding point 2), there are many different map_* functions that can be used to allow the programmer to determine the format of results. For example map_dfr() returns a data frame. 
 
 ### Question 4
 **What is a side-effect function?**
@@ -51,13 +54,11 @@ When a function is run, it creates a temporary environment in which to work inst
 
 ### Question 1
 
-Write a basic function (call it getRMSE()) that takes in a vector of responses and a
-vector of predictions and outputs the RMSE.
+Write a basic function (call it getRMSE()) that takes in a vector of responses and a vector of predictions and outputs the RMSE.
+
+If a value is missing for the vector of responses (i.e. an NA is present), allow for additional arguments to the mean() function (elipses) that removes the NA values in the computation.
 ```{r}
 
-#If a value is missing for the vector of responses (i.e. an NA is present), 
-#allow for additional arguments to the mean() function (elipses) that removes 
-#the NA values in the computation.
 getRMSE <- function(response_vector, prediction_vector, ...){
   result <- sqrt(mean((response_vector-prediction_vector)^2, ...))
   return(result)
@@ -82,6 +83,8 @@ getRMSE(resp, pred)
 #Test RMSE fxn w/ and w/o specifying the behavior to deal w/ missing vals 
 resp[1] <- NA_real_
 resp[2] <- NA_real_
+
+resp
 
 getRMSE(resp, pred, na.rm = TRUE)
 
@@ -120,6 +123,8 @@ getMAE(resp, pred)
 resp[1] <- NA_real_
 resp[2] <- NA_real_
 
+resp
+
 getMAE(resp, pred, na.rm = TRUE)
 
 getMAE(resp, pred)
@@ -139,16 +144,14 @@ Let’s create a wrapper function that can be used to get either or both metrics
 #The behavior should be able to be changed using a character 
 #string of metrics to find.
 getRMSE_getMAE_wrapper <- function(vector1, vector2, metric = "Both", ...){
-  if(is.vector(vector1) == TRUE & is.atomic(vector1) == TRUE &
-     is.numeric(vector1) == TRUE){
-  } else {
-    return("Something's wrong...")
+  if(is.vector(vector1) != TRUE | is.atomic(vector1) != TRUE 
+     | is.numeric(vector1) != TRUE){
+    return("Vector 1 must be a numeric, atomic vector.")
   }
   
-  if(is.vector(vector2) == TRUE & is.atomic(vector2) == TRUE &
-     is.numeric(vector2) == TRUE){
-  } else {
-    return("Something's wrong...")
+  if(is.vector(vector2) != TRUE | is.atomic(vector2) != TRUE 
+     | is.numeric(vector2) != TRUE){
+    return("Vector 2 must be a numeric, atomic vector.")
   }
   
   if(metric == "Both"){
@@ -191,6 +194,8 @@ getRMSE_getMAE_wrapper(resp, pred, "MAE")
 resp[1] <- NA_real_
 resp[2] <- NA_real_
 
+resp
+
 getRMSE_getMAE_wrapper(resp, pred, "Both", na.rm = TRUE)
 
 getRMSE_getMAE_wrapper(resp, pred, "RMSE", na.rm = TRUE)
@@ -204,7 +209,9 @@ getRMSE_getMAE_wrapper(resp, pred, "RMSE")
 getRMSE_getMAE_wrapper(resp, pred, "MAE")
 
 #Test fxn by passing incorrect data
-getRMSE_getMAE_wrapper(iris, penguins)
+getRMSE_getMAE_wrapper(iris, pred)
+
+getRMSE_getMAE_wrapper(resp, iris)
 
 ```
 
@@ -258,7 +265,9 @@ query_API <- function(title, YYYY_MM_DD, API_key){
   
 }
 
-#Test your function with gamestop starting on May 19th, 2025
+#Test your function with gamestop starting at a date within 30 days from today 
+#(per prof's announcement on 6/23/25: don't use 5/19/25 because 
+#that's more than 30 days ago)
 query_API("gamestop", "2025-06-01", "b4902a7135914e3da8e0cf971b2e8fd3")
 
 ```
